@@ -15,7 +15,7 @@ namespace StoryEditor
 {
     public partial class Form1 : Form
     {
-        public string pathToStoryFile = "StoryOriginal.000";
+        public string pathToStoryFile = "";
         public string pathToStoryBinFile = "story.000";
         public string pathToDivFile = "";
         public string pathToGameFolder = "";
@@ -72,6 +72,7 @@ namespace StoryEditor
                     Div.Filter = "Div.exe (*.exe)|*.exe|All files (*.*)|*.*";
                     if (Div.ShowDialog() == DialogResult.OK)
                     {
+                        pathToDivFile = Div.FileName;
                         int x = pathToDivFile.LastIndexOf("\\", StringComparison.CurrentCulture);
                         pathToGameFolder = pathToDivFile.Remove(x);
                         pathToStoryBinFile = pathToDivFile.Remove(x) + "\\main\\startup\\story.000";
@@ -95,22 +96,8 @@ namespace StoryEditor
                 StoryUnpack(Story);
             }
         }
-        private void OpenButton_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog OPF = new OpenFileDialog();
-            OPF.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            OPF.Filter = "story files (*.div)|*.div|All files (*.*)|*.*";
-            if (OPF.ShowDialog() == DialogResult.OK)
-            {
-                pathToStoryFile = OPF.FileName;
-                System.Diagnostics.Debug.WriteLine(pathToStoryFile);
-                Story = System.IO.File.ReadLines(pathToStoryFile).ToArray();
-                StoryUnpack(Story);
-            }
-        }
         private void StoryUnpack(string[] story)
         {
-            System.Diagnostics.Debug.WriteLine(story.Length);
             objects.Clear();
             goals.Clear();
             subGoals.Clear();
@@ -223,7 +210,9 @@ namespace StoryEditor
                 }
             }
             UpdateObjects();
-            ConsoleRichTextBox.AppendText("Story unpack OK" + "\n");
+            ConsoleRichTextBox.AppendText(pathToStoryFile + " unpack" + "\n");
+            GoalListBox.SelectedIndex = 0;
+            selectedGoal = 0;
         }
         private void SaveStory(
             string patch,
@@ -335,7 +324,7 @@ namespace StoryEditor
                 tw.WriteLine(s);
             }
             tw.Close();
-            ConsoleRichTextBox.AppendText("Story save OK" + "\n");
+            ConsoleRichTextBox.AppendText(patch + " save" + "\n");
         }
         private void UpdateObjects()
         {
@@ -516,52 +505,77 @@ namespace StoryEditor
             SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
         }
 
-        private void BuildButton_Click(object sender, EventArgs e) // Компилируем бинарник
+        private void BuildButton_Click(object sender, EventArgs e) // Сохраняем и компилируем бинарник
         {
-            SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
-            System.Diagnostics.Debug.WriteLine("pathToStoryFile " + pathToStoryFile);
-            System.Diagnostics.Debug.WriteLine("pathToStoryBinFile " + pathToStoryBinFile);
-            
-            if (build_and_run_game) // Запускаем игру
+
+            if(selectedGoal >= 0)
             {
-                Environment.CurrentDirectory = pathToMainProgramFolder;
-                System.Diagnostics.Debug.WriteLine(Environment.CurrentDirectory);
-                ProcessStartInfo BuildStory = new()
+                bool ready = true;
+                if (pathToStoryFile == "")
                 {
-                    WorkingDirectory = pathToMainProgramFolder,
-                    FileName = @"OsirisCC.exe",
-                    //RedirectStandardOutput = true,
-                    Arguments = " -log CON -compile \"" + pathToStoryFile + "\" -save \"" + pathToStoryBinFile + "\"",
-                    UseShellExecute = true
-                };
-                Process? build = Process.Start(BuildStory);
-                build?.WaitForExit();
-                ConsoleRichTextBox.AppendText("Story build OK" + "\n");
-                Environment.CurrentDirectory = pathToGameFolder;
-                System.Diagnostics.Debug.WriteLine(Environment.CurrentDirectory);
-                ProcessStartInfo GameStart = new()
+                    SaveFileDialog SF = new SaveFileDialog();
+                    SF.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    SF.Filter = "Divinity Scripts(*.div)|*.div|All files(*.*)|*.*";
+                    if (SF.ShowDialog() == DialogResult.OK)
+                    {
+                        pathToStoryFile = SF.FileName;
+                        SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
+                    }
+                    else 
+                    {
+                        ready = false;
+                    }
+                }
+                else
                 {
-                    WorkingDirectory = pathToGameFolder,
-                    FileName = pathToDivFile,
-                    UseShellExecute = true
-                };
-                _ = Process.Start(GameStart);
-                ConsoleRichTextBox.AppendText("Game statr" + "\n");
-            }
-            else
-            {
-                Environment.CurrentDirectory = pathToMainProgramFolder;
-                System.Diagnostics.Debug.WriteLine(Environment.CurrentDirectory);
-                ProcessStartInfo BuildStory = new()
+                    SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
+                }
+                if (ready)
                 {
-                    WorkingDirectory = pathToMainProgramFolder,
-                    FileName = @"OsirisCC.exe",
-                    //RedirectStandardOutput = true,
-                    Arguments = " -log CON -compile \"" + pathToStoryFile + "\" -save \"" + pathToStoryBinFile + "\"",
-                    UseShellExecute = true
-                };
-                _ = Process.Start(BuildStory);
-                ConsoleRichTextBox.AppendText("Story build OK" + "\n");
+                    if (build_and_run_game) // Запускаем игру
+                    {
+                        Environment.CurrentDirectory = pathToMainProgramFolder;
+                        System.Diagnostics.Debug.WriteLine("1  " + Environment.CurrentDirectory);
+                        ProcessStartInfo BuildStory = new()
+                        {
+                            WorkingDirectory = pathToMainProgramFolder,
+                            FileName = @"OsirisCC.exe",
+                            Arguments = " -log CON -compile \"" + pathToStoryFile + "\" -save \"" + pathToStoryBinFile + "\"",
+                            UseShellExecute = true
+                        };
+
+                        Process? build = Process.Start(BuildStory);
+                        build?.WaitForExit();
+                        ConsoleRichTextBox.AppendText(pathToStoryBinFile + " build" + "\n");
+                        Environment.CurrentDirectory = pathToGameFolder;
+                        System.Diagnostics.Debug.WriteLine("2  " + Environment.CurrentDirectory);
+                        ProcessStartInfo GameStart = new()
+                        {
+                            WorkingDirectory = pathToGameFolder,
+                            FileName = pathToDivFile,
+                            UseShellExecute = true
+                        };
+                        Process? game = Process.Start(GameStart);
+                        game?.WaitForExit();
+                        ConsoleRichTextBox.AppendText("Game started" + "\n");
+                        Environment.CurrentDirectory = pathToMainProgramFolder;
+                    }
+                    else
+                    {
+                        Environment.CurrentDirectory = pathToMainProgramFolder;
+                        System.Diagnostics.Debug.WriteLine("3  " + Environment.CurrentDirectory);
+                        ProcessStartInfo BuildStory = new()
+                        {
+                            WorkingDirectory = pathToMainProgramFolder,
+                            FileName = @"OsirisCC.exe",
+                            Arguments = " -log CON -compile \"" + pathToStoryFile + "\" -save \"" + pathToStoryBinFile + "\"",
+                            UseShellExecute = true
+                        };
+                        Process? build = Process.Start(BuildStory);
+                        build?.WaitForExit();
+                        ConsoleRichTextBox.AppendText(pathToStoryBinFile + " build" + "\n");
+                    }
+                }
             }
         }
         public class Objects
@@ -593,6 +607,61 @@ namespace StoryEditor
         {
             build_and_run_game = !build_and_run_game;
             buildAndRunGameToolStripMenuItem.Checked = build_and_run_game;
+        }
+        private void originalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (File.Exists("StoryOriginal.000"))
+            {
+                Story = System.IO.File.ReadLines("StoryOriginal.000").ToArray();
+                StoryUnpack(Story);
+            }
+            else
+            {
+                ConsoleRichTextBox.AppendText("File StoryOriginal.000 not found" + "\n");
+            }
+            pathToStoryFile = "";
+        }
+        private void customToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog OPF = new OpenFileDialog();
+            OPF.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            OPF.Filter = "story.div (*.div)|*.div|All files (*.*)|*.*";
+            if (OPF.ShowDialog() == DialogResult.OK)
+            {
+                pathToStoryFile = OPF.FileName;
+                ConsoleRichTextBox.AppendText("Open file: " + pathToStoryFile + "\n");
+                Story = System.IO.File.ReadLines(pathToStoryFile).ToArray();
+                StoryUnpack(Story);
+            }
+        }
+        private void saveStoryAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog SF = new SaveFileDialog();
+            SF.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            SF.Filter = "Divinity Scripts(*.div)|*.div|All files(*.*)|*.*";
+            if (SF.ShowDialog() == DialogResult.OK)
+            {
+                pathToStoryFile = SF.FileName;
+                SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
+            }
+        }
+        private void saveStoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (pathToStoryFile == "")
+            {
+                SaveFileDialog SF = new SaveFileDialog();
+                SF.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                SF.Filter = "Divinity Scripts(*.div)|*.div|All files(*.*)|*.*";
+                if (SF.ShowDialog() == DialogResult.OK)
+                {
+                    pathToStoryFile = SF.FileName;
+                    SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
+                }
+            }
+            else
+            {
+                SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
+            }
         }
     }
 }

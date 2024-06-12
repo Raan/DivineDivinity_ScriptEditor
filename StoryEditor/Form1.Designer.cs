@@ -30,8 +30,12 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             toolStrip1 = new ToolStrip();
-            OpenButton = new ToolStripButton();
-            SaveButton = new ToolStripButton();
+            FileToolStripDropDownButton1 = new ToolStripDropDownButton();
+            originalStoryToolStripMenuItem1 = new ToolStripMenuItem();
+            originalToolStripMenuItem = new ToolStripMenuItem();
+            customToolStripMenuItem = new ToolStripMenuItem();
+            saveStoryToolStripMenuItem = new ToolStripMenuItem();
+            saveStoryAsToolStripMenuItem = new ToolStripMenuItem();
             BuildButton = new ToolStripButton();
             OptionToolStripDropDownButton = new ToolStripDropDownButton();
             compiletraceToolStripMenuItem = new ToolStripMenuItem();
@@ -156,32 +160,59 @@
             // toolStrip1
             // 
             toolStrip1.ImageScalingSize = new Size(20, 20);
-            toolStrip1.Items.AddRange(new ToolStripItem[] { OpenButton, SaveButton, BuildButton, OptionToolStripDropDownButton });
+            toolStrip1.Items.AddRange(new ToolStripItem[] { FileToolStripDropDownButton1, BuildButton, OptionToolStripDropDownButton });
             toolStrip1.Location = new Point(0, 0);
             toolStrip1.Name = "toolStrip1";
             toolStrip1.Size = new Size(1194, 27);
             toolStrip1.TabIndex = 0;
             toolStrip1.Text = "toolStrip1";
             // 
-            // OpenButton
+            // FileToolStripDropDownButton1
             // 
-            OpenButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            OpenButton.Image = (Image)resources.GetObject("OpenButton.Image");
-            OpenButton.ImageTransparentColor = Color.Magenta;
-            OpenButton.Name = "OpenButton";
-            OpenButton.Size = new Size(85, 24);
-            OpenButton.Text = "Open story";
-            OpenButton.Click += OpenButton_Click;
+            FileToolStripDropDownButton1.BackgroundImageLayout = ImageLayout.None;
+            FileToolStripDropDownButton1.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            FileToolStripDropDownButton1.DropDownItems.AddRange(new ToolStripItem[] { originalStoryToolStripMenuItem1, saveStoryToolStripMenuItem, saveStoryAsToolStripMenuItem });
+            FileToolStripDropDownButton1.Image = (Image)resources.GetObject("FileToolStripDropDownButton1.Image");
+            FileToolStripDropDownButton1.ImageTransparentColor = Color.Magenta;
+            FileToolStripDropDownButton1.Name = "FileToolStripDropDownButton1";
+            FileToolStripDropDownButton1.Size = new Size(46, 24);
+            FileToolStripDropDownButton1.Text = "File";
             // 
-            // SaveButton
+            // originalStoryToolStripMenuItem1
             // 
-            SaveButton.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            SaveButton.Image = (Image)resources.GetObject("SaveButton.Image");
-            SaveButton.ImageTransparentColor = Color.Magenta;
-            SaveButton.Name = "SaveButton";
-            SaveButton.Size = new Size(80, 24);
-            SaveButton.Text = "Save story";
-            SaveButton.Click += SaveButton_Click;
+            originalStoryToolStripMenuItem1.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            originalStoryToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { originalToolStripMenuItem, customToolStripMenuItem });
+            originalStoryToolStripMenuItem1.Name = "originalStoryToolStripMenuItem1";
+            originalStoryToolStripMenuItem1.Size = new Size(224, 26);
+            originalStoryToolStripMenuItem1.Text = "Open story";
+            // 
+            // originalToolStripMenuItem
+            // 
+            originalToolStripMenuItem.Name = "originalToolStripMenuItem";
+            originalToolStripMenuItem.Size = new Size(224, 26);
+            originalToolStripMenuItem.Text = "Original";
+            originalToolStripMenuItem.Click += originalToolStripMenuItem_Click;
+            // 
+            // customToolStripMenuItem
+            // 
+            customToolStripMenuItem.Name = "customToolStripMenuItem";
+            customToolStripMenuItem.Size = new Size(224, 26);
+            customToolStripMenuItem.Text = "Custom";
+            customToolStripMenuItem.Click += customToolStripMenuItem_Click;
+            // 
+            // saveStoryToolStripMenuItem
+            // 
+            saveStoryToolStripMenuItem.Name = "saveStoryToolStripMenuItem";
+            saveStoryToolStripMenuItem.Size = new Size(224, 26);
+            saveStoryToolStripMenuItem.Text = "Save story";
+            saveStoryToolStripMenuItem.Click += saveStoryToolStripMenuItem_Click;
+            // 
+            // saveStoryAsToolStripMenuItem
+            // 
+            saveStoryAsToolStripMenuItem.Name = "saveStoryAsToolStripMenuItem";
+            saveStoryAsToolStripMenuItem.Size = new Size(224, 26);
+            saveStoryAsToolStripMenuItem.Text = "Save story as";
+            saveStoryAsToolStripMenuItem.Click += saveStoryAsToolStripMenuItem_Click;
             // 
             // BuildButton
             // 
@@ -916,8 +947,6 @@
         private TabPage ENGINE;
         private TabPage FUNCTION;
         private TabPage SREGION;
-        private ToolStripButton OpenButton;
-        private ToolStripButton SaveButton;
         private ListBox NPCListBox;
         private ListBox OBJECTListBox;
         private SplitContainer NPCSplitContainer;
@@ -960,5 +989,11 @@
         private ToolStripMenuItem debugtraceToolStripMenuItem;
         private RichTextBox ConsoleRichTextBox;
         private ToolStripMenuItem buildAndRunGameToolStripMenuItem;
+        private ToolStripDropDownButton FileToolStripDropDownButton1;
+        private ToolStripMenuItem originalStoryToolStripMenuItem1;
+        private ToolStripMenuItem originalToolStripMenuItem;
+        private ToolStripMenuItem customToolStripMenuItem;
+        private ToolStripMenuItem saveStoryToolStripMenuItem;
+        private ToolStripMenuItem saveStoryAsToolStripMenuItem;
     }
 }
