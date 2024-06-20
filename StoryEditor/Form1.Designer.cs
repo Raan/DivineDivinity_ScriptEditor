@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             toolStrip1 = new ToolStrip();
             FileToolStripDropDownButton1 = new ToolStripDropDownButton();
@@ -44,10 +45,9 @@
             MainControlPanel = new TabControl();
             MAIN = new TabPage();
             MAINSplitContainer = new SplitContainer();
-            GoalListBox = new ListBox();
+            GoalTreeView = new TreeView();
             panel1 = new Panel();
-            ClearFilterButton = new Button();
-            stringFilterTextBox = new TextBox();
+            FilterComboBox = new ComboBox();
             splitContainer1 = new SplitContainer();
             INITGroupBox = new GroupBox();
             INITRichTextBox = new RichTextBox();
@@ -91,6 +91,7 @@
             SREGION = new TabPage();
             SREGIONSplitContainer = new SplitContainer();
             SREGIONListBox = new ListBox();
+            KBContextMenuStrip = new ContextMenuStrip(components);
             toolStrip1.SuspendLayout();
             MainControlPanel.SuspendLayout();
             MAIN.SuspendLayout();
@@ -183,34 +184,34 @@
             originalStoryToolStripMenuItem1.DisplayStyle = ToolStripItemDisplayStyle.Text;
             originalStoryToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { originalToolStripMenuItem, customToolStripMenuItem });
             originalStoryToolStripMenuItem1.Name = "originalStoryToolStripMenuItem1";
-            originalStoryToolStripMenuItem1.Size = new Size(224, 26);
+            originalStoryToolStripMenuItem1.Size = new Size(177, 26);
             originalStoryToolStripMenuItem1.Text = "Open story";
             // 
             // originalToolStripMenuItem
             // 
             originalToolStripMenuItem.Name = "originalToolStripMenuItem";
-            originalToolStripMenuItem.Size = new Size(224, 26);
+            originalToolStripMenuItem.Size = new Size(145, 26);
             originalToolStripMenuItem.Text = "Original";
             originalToolStripMenuItem.Click += originalToolStripMenuItem_Click;
             // 
             // customToolStripMenuItem
             // 
             customToolStripMenuItem.Name = "customToolStripMenuItem";
-            customToolStripMenuItem.Size = new Size(224, 26);
+            customToolStripMenuItem.Size = new Size(145, 26);
             customToolStripMenuItem.Text = "Custom";
             customToolStripMenuItem.Click += customToolStripMenuItem_Click;
             // 
             // saveStoryToolStripMenuItem
             // 
             saveStoryToolStripMenuItem.Name = "saveStoryToolStripMenuItem";
-            saveStoryToolStripMenuItem.Size = new Size(224, 26);
+            saveStoryToolStripMenuItem.Size = new Size(177, 26);
             saveStoryToolStripMenuItem.Text = "Save story";
             saveStoryToolStripMenuItem.Click += saveStoryToolStripMenuItem_Click;
             // 
             // saveStoryAsToolStripMenuItem
             // 
             saveStoryAsToolStripMenuItem.Name = "saveStoryAsToolStripMenuItem";
-            saveStoryAsToolStripMenuItem.Size = new Size(224, 26);
+            saveStoryAsToolStripMenuItem.Size = new Size(177, 26);
             saveStoryAsToolStripMenuItem.Text = "Save story as";
             saveStoryAsToolStripMenuItem.Click += saveStoryAsToolStripMenuItem_Click;
             // 
@@ -298,7 +299,7 @@
             // 
             // MAINSplitContainer.Panel1
             // 
-            MAINSplitContainer.Panel1.Controls.Add(GoalListBox);
+            MAINSplitContainer.Panel1.Controls.Add(GoalTreeView);
             MAINSplitContainer.Panel1.Controls.Add(panel1);
             // 
             // MAINSplitContainer.Panel2
@@ -308,44 +309,33 @@
             MAINSplitContainer.SplitterDistance = 364;
             MAINSplitContainer.TabIndex = 1;
             // 
-            // GoalListBox
+            // GoalTreeView
             // 
-            GoalListBox.Dock = DockStyle.Fill;
-            GoalListBox.FormattingEnabled = true;
-            GoalListBox.ItemHeight = 20;
-            GoalListBox.Location = new Point(0, 36);
-            GoalListBox.Name = "GoalListBox";
-            GoalListBox.Size = new Size(362, 621);
-            GoalListBox.TabIndex = 1;
-            GoalListBox.SelectedIndexChanged += GoalListBox_SelectedIndexChanged;
+            GoalTreeView.Dock = DockStyle.Fill;
+            GoalTreeView.Location = new Point(0, 36);
+            GoalTreeView.Name = "GoalTreeView";
+            GoalTreeView.Size = new Size(362, 621);
+            GoalTreeView.TabIndex = 2;
+            GoalTreeView.AfterSelect += GoalTreeView_AfterSelect;
             // 
             // panel1
             // 
-            panel1.Controls.Add(ClearFilterButton);
-            panel1.Controls.Add(stringFilterTextBox);
+            panel1.Controls.Add(FilterComboBox);
             panel1.Dock = DockStyle.Top;
             panel1.Location = new Point(0, 0);
             panel1.Name = "panel1";
             panel1.Size = new Size(362, 36);
             panel1.TabIndex = 0;
             // 
-            // ClearFilterButton
+            // FilterComboBox
             // 
-            ClearFilterButton.Location = new Point(263, 3);
-            ClearFilterButton.Name = "ClearFilterButton";
-            ClearFilterButton.Size = new Size(94, 27);
-            ClearFilterButton.TabIndex = 1;
-            ClearFilterButton.Text = "Clear";
-            ClearFilterButton.UseVisualStyleBackColor = true;
-            ClearFilterButton.Click += ClearFilterButton_Click;
-            // 
-            // stringFilterTextBox
-            // 
-            stringFilterTextBox.Location = new Point(5, 3);
-            stringFilterTextBox.Name = "stringFilterTextBox";
-            stringFilterTextBox.Size = new Size(252, 27);
-            stringFilterTextBox.TabIndex = 0;
-            stringFilterTextBox.TextChanged += textBox1_TextChanged;
+            FilterComboBox.Dock = DockStyle.Fill;
+            FilterComboBox.Location = new Point(0, 0);
+            FilterComboBox.Name = "FilterComboBox";
+            FilterComboBox.Size = new Size(362, 28);
+            FilterComboBox.TabIndex = 2;
+            FilterComboBox.SelectedIndexChanged += FilterComboBox_SelectedIndexChanged;
+            FilterComboBox.TextUpdate += FilterComboBox_TextUpdate;
             // 
             // splitContainer1
             // 
@@ -850,6 +840,12 @@
             SREGIONListBox.Size = new Size(393, 786);
             SREGIONListBox.TabIndex = 0;
             // 
+            // KBContextMenuStrip
+            // 
+            KBContextMenuStrip.ImageScalingSize = new Size(20, 20);
+            KBContextMenuStrip.Name = "KBContextMenuStrip";
+            KBContextMenuStrip.Size = new Size(61, 4);
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -870,7 +866,6 @@
             ((System.ComponentModel.ISupportInitialize)MAINSplitContainer).EndInit();
             MAINSplitContainer.ResumeLayout(false);
             panel1.ResumeLayout(false);
-            panel1.PerformLayout();
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
@@ -971,10 +966,7 @@
         private ListBox SREGIONListBox;
         private Panel ConsolePanel;
         private SplitContainer MAINSplitContainer;
-        private ListBox GoalListBox;
         private Panel panel1;
-        private Button ClearFilterButton;
-        private TextBox stringFilterTextBox;
         private SplitContainer splitContainer1;
         private GroupBox INITGroupBox;
         private SplitContainer splitContainer2;
@@ -995,5 +987,8 @@
         private ToolStripMenuItem customToolStripMenuItem;
         private ToolStripMenuItem saveStoryToolStripMenuItem;
         private ToolStripMenuItem saveStoryAsToolStripMenuItem;
+        private ContextMenuStrip KBContextMenuStrip;
+        private TreeView GoalTreeView;
+        private ComboBox FilterComboBox;
     }
 }

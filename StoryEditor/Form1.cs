@@ -8,6 +8,9 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using static StoryEditor.Form1;
+using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.LinkLabel;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -24,16 +27,63 @@ namespace StoryEditor
         public List<Objects> objects = new List<Objects>();
         public List<Goal> goals = new List<Goal>();
         public List<string> subGoals = new List<string>();
+        public int[,] subGoalsInt;
+        public List<string> rules_call = new List<string>();
+        public List<string> rules_event = new List<string>();
+        public List<string> rules_query = new List<string>();
+        public List<string> rules_syscall = new List<string>();
+        public List<string> rules_sysquery = new List<string>();
         private string stringFilter = "";
         public int selectedGoal = -1;
         public bool compile_trace = false;
         public bool debug_trace = false;
         public bool build_and_run_game = false;
         string storyVersion = "";
+
         public Form1()
         {
             InitializeComponent();
             pathToMainProgramFolder = AppDomain.CurrentDomain.BaseDirectory;
+            // Читаем rules
+            if (File.Exists("rules.000"))
+            {
+                string[] lines = File.ReadLines("rules.000").ToArray();
+                foreach (var l in lines)
+                {
+                    string[] words = l.Split(new char[] { ' ' });
+                    if (words[0] == "call")
+                    {
+                        int x = l.LastIndexOf("(", StringComparison.CurrentCulture);
+                        string rules = l.Remove(x).Remove(0, words[0].Length + 1);
+                        rules_call.Add(rules);
+                    }
+                    if (words[0] == "event")
+                    {
+                        int x = l.LastIndexOf("(", StringComparison.CurrentCulture);
+                        string rules = l.Remove(x).Remove(0, words[0].Length + 1);
+                        rules_event.Add(rules);
+                    }
+                    if (words[0] == "query")
+                    {
+                        int x = l.LastIndexOf("(", StringComparison.CurrentCulture);
+                        string rules = l.Remove(x).Remove(0, words[0].Length + 1);
+                        rules_query.Add(rules);
+                    }
+                    if (words[0] == "syscall")
+                    {
+                        int x = l.LastIndexOf("(", StringComparison.CurrentCulture);
+                        string rules = l.Remove(x).Remove(0, words[0].Length + 1);
+                        rules_syscall.Add(rules);
+                    }
+                    if (words[0] == "sysquery")
+                    {
+                        int x = l.LastIndexOf("(", StringComparison.CurrentCulture);
+                        string rules = l.Remove(x).Remove(0, words[0].Length + 1);
+                        rules_sysquery.Add(rules);
+                    }
+                }
+            }
+            // Читаем конфиг
             if (File.Exists("config.ini"))
             {
                 string[] lines = File.ReadLines("config.ini").ToArray();
@@ -89,13 +139,49 @@ namespace StoryEditor
             ConsoleRichTextBox.AppendText("Game directory: " + pathToGameFolder + "\n");
             ConsoleRichTextBox.AppendText("Path to div.exe: " + pathToDivFile + "\n");
             ConsoleRichTextBox.AppendText("Path to story.000: " + pathToStoryBinFile + "\n");
-            if (File.Exists(pathToStoryFile))
+            //---------------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------------
+            if (File.Exists("StoryOriginal.000"))
             {
-                Story = System.IO.File.ReadLines(pathToStoryFile).ToArray();
-                pathToStoryFile = "Story.div";
-                StoryUnpack(Story);
+                //Story = System.IO.File.ReadLines("StoryOriginal.000").ToArray();
+                //pathToStoryFile = "Story.div";
+                //StoryUnpack(Story);
+                //GoalTree();
+            }
+            //---------------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------------
+            //---------------------------------------------------------------------------------------
+            // Добавляем элементы в контекстное меню для области KB
+            KBRichTextBox.ContextMenuStrip = KBContextMenuStrip;
+            ToolStripMenuItem Call = new ToolStripMenuItem("Call");
+            ToolStripMenuItem Event = new ToolStripMenuItem("Event");
+            ToolStripMenuItem Query = new ToolStripMenuItem("Query");
+            ToolStripMenuItem Syscall = new ToolStripMenuItem("Syscall");
+            ToolStripMenuItem Sysquery = new ToolStripMenuItem("Sysquery");
+            KBContextMenuStrip.Items.AddRange(new[] { Call, Event, Query, Syscall });
+            foreach (var item in rules_call)
+            {
+                Call.DropDownItems.Add(item, null, RulesClickHandler);
+            }
+            foreach (var item in rules_event)
+            {
+                Event.DropDownItems.Add(item, null, RulesClickHandler);
+            }
+            foreach (var item in rules_query)
+            {
+                Query.DropDownItems.Add(item, null, RulesClickHandler);
+            }
+            foreach (var item in rules_syscall)
+            {
+                Syscall.DropDownItems.Add(item, null, RulesClickHandler);
+            }
+            foreach (var item in rules_sysquery)
+            {
+                Sysquery.DropDownItems.Add(item, null, RulesClickHandler);
             }
         }
+        //---------------------------------------------------------------------------------------
         private void StoryUnpack(string[] story)
         {
             objects.Clear();
@@ -211,9 +297,10 @@ namespace StoryEditor
             }
             UpdateObjects();
             ConsoleRichTextBox.AppendText(pathToStoryFile + " unpack" + "\n");
-            GoalListBox.SelectedIndex = 0;
             selectedGoal = 0;
+            ReadGoal(0);
         }
+        //---------------------------------------------------------------------------------------
         private void SaveStory(
             string patch,
             bool C_trace,
@@ -279,9 +366,10 @@ namespace StoryEditor
             }
             tw.WriteLine("");
 
-            if (File.Exists("instruct.000"))
+
+            if (File.Exists("rules.000"))
             {
-                string[] inst = System.IO.File.ReadLines("instruct.000").ToArray();
+                string[] inst = System.IO.File.ReadLines("rules.000").ToArray();
                 foreach (var i in inst)
                 {
                     tw.WriteLine(i);
@@ -291,6 +379,7 @@ namespace StoryEditor
             tw.WriteLine("");
             tw.WriteLine(ver);
             tw.WriteLine("");
+
             foreach (var g in G)
             {
                 tw.WriteLine("Goal(" + g.ID + ").Title(\"" + g.NAME + "\");");
@@ -319,13 +408,34 @@ namespace StoryEditor
                 tw.WriteLine("}");
                 tw.WriteLine("");
             }
-            foreach (var s in SG)
+            //foreach (var s in SG)
+            //{
+            //    tw.WriteLine(s);
+            //}
+
+            foreach (var g in goals)
             {
-                tw.WriteLine(s);
+                if (g.parent.Count == 0)
+                {
+                    tw.WriteLine("Goal(" + g.ID + ").SubGoals(OR);");
+                }
+                else
+                {
+                    tw.WriteLine("Goal(" + g.ID + ").SubGoals(AND);");
+                }
+                if (g.child.Count > 0)
+                {
+                    foreach (var ch in g.child)
+                    {
+                        tw.WriteLine("Goal(" + g.ID + ").SubGoal(" + (ch + 1) + ");");
+                    }
+                }
             }
+
             tw.Close();
             ConsoleRichTextBox.AppendText(patch + " save" + "\n");
         }
+        //---------------------------------------------------------------------------------------
         private void UpdateObjects()
         {
             NPCListBox.Items.Clear();
@@ -339,7 +449,6 @@ namespace StoryEditor
             ENGINEListBox.Items.Clear();
             FUNCTIONListBox.Items.Clear();
             SREGIONListBox.Items.Clear();
-            GoalListBox.Items.Clear();
 
             objects.Sort((x, y) => x.ID.CompareTo(y.ID));
             foreach (var obj in objects)
@@ -357,26 +466,8 @@ namespace StoryEditor
                 if (obj.type == 15) SREGIONListBox.Items.Add(obj.ID.ToString().PadRight(6, ' ') + obj.name);
 
             }
-            // Заполняем список Goal stringFilter
-            foreach (var g in goals)
-            {
-                if (stringFilter.Length == 0)
-                {
-                    GoalListBox.Items.Add(g.ID.ToString().PadRight(6, ' ') + g.NAME);
-                }
-                else
-                {
-                    if (stringFilter.Length <= g.NAME.Length && stringFilter.Length > 0)
-                    {
-                        if (g.NAME.Contains(stringFilter, StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            GoalListBox.Items.Add(g.ID.ToString().PadRight(6, ' ') + g.NAME);
-                        }
-                    }
-                }
-
-            }
         }
+        //---------------------------------------------------------------------------------------
         static void HighlightPhrase(RichTextBox box, string phrase, Color color)
         {
             int pos = box.SelectionStart;
@@ -397,35 +488,7 @@ namespace StoryEditor
             box.SelectionStart = pos;
             box.SelectionLength = 0;
         }
-        private void GoalListBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            INITRichTextBox.Text = "";
-            KBRichTextBox.Text = "";
-            EXITRichTextBox.Text = "";
-            string buffer = "";
-            string[] words = ("" + GoalListBox.SelectedItem).Split(new char[] { ' ' });
-            selectedGoal = Int32.Parse(words[0]) - 1;
-            foreach (var s in goals[selectedGoal].INIT)
-            {
-                buffer += s + System.Environment.NewLine;
-            }
-            INITRichTextBox.Text += buffer;
-            buffer = "";
-            foreach (var s in goals[selectedGoal].KB)
-            {
-                buffer += s + System.Environment.NewLine;
-            }
-            KBRichTextBox.Text += buffer;
-            buffer = "";
-            foreach (var s in goals[selectedGoal].EXIT)
-            {
-                buffer += s + System.Environment.NewLine;
-            }
-            EXITRichTextBox.Text += buffer;
-            buffer = "";
-
-            ColoredWords();
-        }
+        //---------------------------------------------------------------------------------------
         private void ColoredWords()
         {
             HighlightPhrase(KBRichTextBox, "IF", Color.Orange);
@@ -436,19 +499,7 @@ namespace StoryEditor
             HighlightPhrase(KBRichTextBox, "PROC", Color.Orange);
             HighlightPhrase(KBRichTextBox, "GoalCompleted;", Color.BlueViolet);
         }
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-            stringFilter = stringFilterTextBox.Text;
-            UpdateObjects();
-        }
-
-        private void ClearFilterButton_Click(object sender, EventArgs e)
-        {
-            stringFilter = "";
-            stringFilterTextBox.Clear();
-            UpdateObjects();
-        }
-
+        //---------------------------------------------------------------------------------------
         private void INITRichTextBox_Leave(object sender, EventArgs e)
         {
             if (selectedGoal >= 0)
@@ -461,7 +512,7 @@ namespace StoryEditor
                 }
             }
         }
-
+        //---------------------------------------------------------------------------------------
         private void KBRichTextBox_Leave(object sender, EventArgs e)
         {
             if (selectedGoal >= 0)
@@ -474,7 +525,7 @@ namespace StoryEditor
                 }
             }
         }
-
+        //---------------------------------------------------------------------------------------
         private void EXITRichTextBox_Leave(object sender, EventArgs e)
         {
             if (selectedGoal >= 0)
@@ -487,28 +538,28 @@ namespace StoryEditor
                 }
             }
         }
-
+        //---------------------------------------------------------------------------------------
         private void compiletraceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             compile_trace = !compile_trace;
             compiletraceToolStripMenuItem.Checked = compile_trace;
         }
-
+        //---------------------------------------------------------------------------------------
         private void debugtraceToolStripMenuItem_Click(object sender, EventArgs e)
         {
             debug_trace = !debug_trace;
             debugtraceToolStripMenuItem.Checked = debug_trace;
         }
-
+        //---------------------------------------------------------------------------------------
         private void SaveButton_Click(object sender, EventArgs e)
         {
             SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
         }
-
+        //---------------------------------------------------------------------------------------
         private void BuildButton_Click(object sender, EventArgs e) // Сохраняем и компилируем бинарник
         {
 
-            if(selectedGoal >= 0)
+            if (selectedGoal >= 0)
             {
                 bool ready = true;
                 if (pathToStoryFile == "")
@@ -521,7 +572,7 @@ namespace StoryEditor
                         pathToStoryFile = SF.FileName;
                         SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
                     }
-                    else 
+                    else
                     {
                         ready = false;
                     }
@@ -578,42 +629,20 @@ namespace StoryEditor
                 }
             }
         }
-        public class Objects
-        {
-            public string name = "";
-            public int type;
-            public int ID;
-            public Objects(string name, string type, string ID)
-            {
-                this.name = name;
-                this.type = Int32.Parse(type);
-                this.ID = Int32.Parse(ID);
-            }
-        }
-        public class Goal
-        {
-            public int ID;
-            public string NAME = "";
-            public List<string> INIT = new List<string>();
-            public List<string> KB = new List<string>();
-            public List<string> EXIT = new List<string>();
-            public Goal(int id, string name)
-            {
-                this.ID = id;
-                this.NAME = name;
-            }
-        }
+        //---------------------------------------------------------------------------------------
         private void buildAndRunGameToolStripMenuItem_Click(object sender, EventArgs e)
         {
             build_and_run_game = !build_and_run_game;
             buildAndRunGameToolStripMenuItem.Checked = build_and_run_game;
         }
+        //---------------------------------------------------------------------------------------
         private void originalToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (File.Exists("StoryOriginal.000"))
             {
                 Story = System.IO.File.ReadLines("StoryOriginal.000").ToArray();
                 StoryUnpack(Story);
+                GoalTree();
             }
             else
             {
@@ -621,6 +650,7 @@ namespace StoryEditor
             }
             pathToStoryFile = "";
         }
+        //---------------------------------------------------------------------------------------
         private void customToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenFileDialog OPF = new OpenFileDialog();
@@ -632,8 +662,10 @@ namespace StoryEditor
                 ConsoleRichTextBox.AppendText("Open file: " + pathToStoryFile + "\n");
                 Story = System.IO.File.ReadLines(pathToStoryFile).ToArray();
                 StoryUnpack(Story);
+                GoalTree();
             }
         }
+        //---------------------------------------------------------------------------------------
         private void saveStoryAsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             SaveFileDialog SF = new SaveFileDialog();
@@ -645,6 +677,7 @@ namespace StoryEditor
                 SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
             }
         }
+        //---------------------------------------------------------------------------------------
         private void saveStoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (pathToStoryFile == "")
@@ -663,5 +696,219 @@ namespace StoryEditor
                 SaveStory(pathToStoryFile, compile_trace, debug_trace, objects, goals, subGoals, storyVersion);
             }
         }
+        //---------------------------------------------------------------------------------------
+        private void RulesClickHandler(object sender, EventArgs e)
+        {
+            KBRichTextBox.SelectionLength = 0;
+            KBRichTextBox.SelectedText = sender.ToString() + "\n";
+        }
+        //---------------------------------------------------------------------------------------
+        private void GoalTree()
+        {
+            GoalTreeView.Nodes.Clear();
+            foreach (var SG in subGoals)
+            {
+                string goal_string = SG.Remove(0, 5);
+                int x = goal_string.IndexOf(")", StringComparison.CurrentCulture);
+                goal_string = goal_string.Remove(x, goal_string.Length - x);
+                string subgoal_string = SG;
+                x = subgoal_string.LastIndexOf("(", StringComparison.CurrentCulture);
+                subgoal_string = subgoal_string.Remove(0, x + 1);
+                subgoal_string = subgoal_string.Remove(subgoal_string.Length - 2, 2);
+                int goal = 0;
+                if (Int32.TryParse(goal_string, out int c))
+                {
+                    goal = c;
+                }
+                int subgoal = 0;
+                if (Int32.TryParse(subgoal_string, out c))
+                {
+                    subgoal = c;
+                }
+                if (subgoal > 0)
+                {
+                    goals[subgoal - 1].parent.Add(goal - 1);
+                    goals[goal - 1].child.Add(subgoal - 1);
+                }
+            }
+            foreach (var g in goals)
+            {
+                TreeNode t;
+                if (g.parent.Count == 0 && g.child.Count == 0)
+                {
+                    t = new TreeNode(g.ID + " " + g.NAME)
+                    {
+                        Tag = g.ID
+                    };
+                    GoalTreeView.Nodes.Add(t);
+                }
+                else
+                {
+                    if (g.parent.Count == 0)
+                    {
+                        t = new TreeNode(g.ID + " " + g.NAME)
+                        {
+                            Tag = g.ID
+                        };
+                        GoalTreeView.Nodes.Add(AddNode(t, g.child));
+                    }
+                }
+            }
+            GoalTreeView.HideSelection = false;
+        }
+        //---------------------------------------------------------------------------------------
+        public TreeNode AddNode(TreeNode tn, List<int> child)
+        {
+            foreach (var ch in child)
+            {
+                if (goals[ch].child.Count != 0)
+                {
+                    TreeNode t = new TreeNode(goals[ch].ID + " " + goals[ch].NAME)
+                    {
+                        Tag = goals[ch].ID
+                    };
+                    tn.Nodes.Add(AddNode(t, goals[ch].child));
+                }
+                else
+                {
+                    tn.Nodes.Add(new TreeNode(goals[ch].ID + " " + goals[ch].NAME)
+                    {
+                        Tag = goals[ch].ID
+                    });
+                }
+            }
+            return tn;
+        }
+        //---------------------------------------------------------------------------------------
+        private void GoalTreeView_AfterSelect(object sender, TreeViewEventArgs e)
+        {
+            selectedGoal = Int32.Parse(GoalTreeView.SelectedNode.Tag.ToString() + "") - 1;
+            ReadGoal(selectedGoal);
+        }
+        //---------------------------------------------------------------------------------------
+        private void ReadGoal(int selectGoal)
+        {
+            INITRichTextBox.Text = "";
+            KBRichTextBox.Text = "";
+            EXITRichTextBox.Text = "";
+            string buffer = "";
+            foreach (var s in goals[selectGoal].INIT)
+            {
+                buffer += s + System.Environment.NewLine;
+            }
+            INITRichTextBox.Text += buffer;
+            buffer = "";
+            foreach (var s in goals[selectGoal].KB)
+            {
+                buffer += s + System.Environment.NewLine;
+            }
+            KBRichTextBox.Text += buffer;
+            buffer = "";
+            foreach (var s in goals[selectGoal].EXIT)
+            {
+                buffer += s + System.Environment.NewLine;
+            }
+            EXITRichTextBox.Text += buffer;
+            ColoredWords();
+        }
+        //---------------------------------------------------------------------------------------
+        private void FilterComboBox_TextUpdate(object sender, EventArgs e)
+        {
+            stringFilter = FilterComboBox.Text;
+            FilterComboBox.Items.Clear();
+            FilterComboBox.Items.Add(FilterComboBox.Text);
+            foreach (var g in goals)
+            {
+                if (g.NAME.Contains(FilterComboBox.Text, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    FilterComboBox.Items.Add(g.ID + " " + g.NAME);
+                }
+            }
+            Cursor.Current = Cursors.Default;
+            FilterComboBox.DroppedDown = true;
+            FilterComboBox.SelectedItem = null;
+            FilterComboBox.SelectedIndex = -1;
+            FilterComboBox.Text = stringFilter;
+            FilterComboBox.SelectionStart = FilterComboBox.Text.Length;
+        }
+        //---------------------------------------------------------------------------------------
+        private void FilterComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (FilterComboBox.SelectedIndex >= 0)
+            {
+                //System.Diagnostics.Debug.WriteLine(FilterComboBox.SelectedIndex + " " + stringFilter);
+                string[] words = (FilterComboBox.SelectedItem.ToString() + "").Split(new char[] { ' ' });
+                //System.Diagnostics.Debug.WriteLine(words[0]);
+                if (Int32.TryParse(words[0], out int x))
+                {
+                    System.Diagnostics.Debug.WriteLine(x);
+                    TreeNode itemNode = null;
+                    foreach (TreeNode node in GoalTreeView.Nodes)
+                    {
+                        itemNode = SearchNodeFromID(x, node);
+                        if (itemNode != null) break;
+                    }
+                    System.Diagnostics.Debug.WriteLine(itemNode);
+                    if (itemNode != null)
+                    {
+                        GoalTreeView.SelectedNode = itemNode;
+                    }
+                    else
+                    {
+                        var result = GoalTreeView.Nodes.OfType<TreeNode>()
+                            .FirstOrDefault(node => node.Tag.Equals(x));
+                        if (result != null)
+                        {
+                            GoalTreeView.SelectedNode = result;
+                        }
+                    }
+                }
+            }
+        }
+        //---------------------------------------------------------------------------------------
+        public TreeNode SearchNodeFromID(int itemId, TreeNode rootNode)
+        {
+            foreach (TreeNode node in rootNode.Nodes)
+            {
+                if (node.Tag.Equals(itemId)) return node;
+                TreeNode next = SearchNodeFromID(itemId, node);
+                if (next != null) return next;
+            }
+            return null;
+        }
+    }
+    public class Goal
+    {
+        public List<int> parent = new List<int>();
+        public List<int> child = new List<int>();
+        public int ID;
+        public string NAME = "";
+        public List<string> INIT = new List<string>();
+        public List<string> KB = new List<string>();
+        public List<string> EXIT = new List<string>();
+        public Goal(int id, string name)
+        {
+            ID = id;
+            NAME = name;
+        }
+    }
+    public class Objects
+    {
+        public string name = "";
+        public int type;
+        public int ID;
+        public Objects(string name, string type, string ID)
+        {
+            this.name = name;
+            this.type = Int32.Parse(type);
+            this.ID = Int32.Parse(ID);
+        }
     }
 }
+
+//System.Diagnostics.Debug.WriteLine();
+
+//if (g.NAME.Contains(stringFilter, StringComparison.CurrentCultureIgnoreCase))
+//{
+//    GoalListBox.Items.Add(g.ID.ToString().PadRight(6, ' ') + g.NAME);
+//}
